@@ -22,9 +22,9 @@ class ContactAdapter(private val context:Context, private val list: List<Contact
     override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
        val contact = list[position];
         with(holder.itemView){
-            nameTXT.text = contact.name.toString();
-            numberTXT.text = contact.phone.toString();
-            llItem.setOnClickListener { onClick(position) }
+            nameTXT.text = contact.name
+            numberTXT.text = contact.phone
+            llItem.setOnClickListener { onClick(contact.id) }
         }
     }
 

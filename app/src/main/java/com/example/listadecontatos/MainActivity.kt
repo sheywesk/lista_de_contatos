@@ -3,11 +3,13 @@ package com.example.listadecontatos
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.SearchView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.listadecontatos.application.ContactApplication
 import com.example.listadecontatos.bases.BaseActivity
 import com.example.listadecontatos.feature.contato.ContactActivity
 import com.example.listadecontatos.feature.listacontatos.adapter.ContactAdapter
@@ -33,21 +35,24 @@ class MainActivity : BaseActivity() {
 
     override fun onResume() {
         super.onResume()
-        adapter?.notifyDataSetChanged()
+        generateContactList()
     }
     private fun setupOnClicks(){
         fab.setOnClickListener{onClickAdd()}
     }
     private fun generateContactList(){
-        ContactSingleton.list.add(ContactModel(1,"fulano","(00) 899999999"))
-        ContactSingleton.list.add(ContactModel(2,"ciclano","(00) 899999999"))
-        ContactSingleton.list.add(ContactModel(3,"beltrano","(00) 899999999"))
+        try {
+            listFilter = (ContactApplication.instance.helperDB?.onSelect("") ?: mutableListOf<ContactModel>()) as MutableList<ContactModel>
+            adapter = ContactAdapter(this,listFilter){ onClickItemRecyclerView(it) }
+            recyclerView.adapter = adapter;
+        }catch (ex:Exception){
+            ex.printStackTrace();
+        }
+
     }
 
     private fun setupRecyclerView(){
         recyclerView.layoutManager = LinearLayoutManager(this);
-        adapter = ContactAdapter(this,ContactSingleton.list){ onClickItemRecyclerView(it)}
-        recyclerView.adapter = adapter;
     }
 
     private fun onClickItemRecyclerView(item:Int){
@@ -65,21 +70,40 @@ class MainActivity : BaseActivity() {
     private fun onChange() {
 
         val context = this
+        val contactSingleton = ContactApplication.instance;
         searchEDT.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
+                try {
+                    if(query != null){
+                        listFilter = (contactSingleton.helperDB?.onSelect(query) ?: mutableListOf<ContactModel>()) as MutableList<ContactModel>
+
+                    }
+                }   catch (ex:Exception){
+
+                    ex.printStackTrace()
+                }
+                adapter = ContactAdapter(context,listFilter){onClickItemRecyclerView(it)}
+                recyclerView.adapter = adapter;
                 return false
             }
             override fun onQueryTextChange(newText: String?): Boolean {
-                listFilter = ContactSingleton.list.filter{
-                    if (newText != null) {
-                        if(it.name.toLowerCase().contains(newText.toLowerCase())){
-                            return@filter true;
-                        }
-                    }
-                    return@filter false
-                }as MutableList<ContactModel>
-                adapter = ContactAdapter(context,listFilter){onClickItemRecyclerView(it)}
-                recyclerView.adapter = adapter;
+//                try {
+//                    if(newText != null){
+//                        listFilter = (contactInstance.helperDB?.onSelect(newText) ?: mutableListOf<ContactModel>()) as MutableList<ContactModel>
+//                    }
+//                }   catch (ex:Exception){
+//                    ex.printStackTrace()
+//                }
+//                listFilter = ContactSingleton.list.filter{
+//                    if (newText != null) {
+//                        if(it.name.toLowerCase().contains(newText.toLowerCase())){
+//                            return@filter true;
+//                        }
+//                    }
+//                    return@filter false
+//                }as MutableList<ContactModel>
+//                adapter = ContactAdapter(context,listFilter){onClickItemRecyclerView(it)}
+//                recyclerView.adapter = adapter;
                 return false
             }
         })

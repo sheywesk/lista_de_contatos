@@ -2,13 +2,15 @@ package com.example.listadecontatos.feature.contato
 
 import android.os.Bundle
 import android.view.View
-import androidx.appcompat.app.AppCompatDelegate
+import android.widget.Toast
 import com.example.listadecontatos.R
+import com.example.listadecontatos.application.ContactApplication
 import com.example.listadecontatos.bases.BaseActivity
 import com.example.listadecontatos.feature.listacontatos.model.ContactModel
 import com.example.listadecontatos.singleton.ContactSingleton
 import kotlinx.android.synthetic.main.activity_contact.*
 import kotlinx.android.synthetic.main.toolbar.*
+import java.lang.Exception
 
 class ContactActivity:BaseActivity() {
     private var index = -1
@@ -28,25 +30,39 @@ class ContactActivity:BaseActivity() {
             deleteContactBTN.visibility = View.GONE
             return
         }
-        nameContactEDT.setText(ContactSingleton.list[index].name);
-        numberContactEDT.setText(ContactSingleton.list[index].phone);
+        var list:List<ContactModel> = ContactApplication.instance.helperDB?.onSelect("$index",true) ?: return
+        var contact = list.getOrNull(0) ?: return
+        nameContactEDT.setText(contact.name);
+        numberContactEDT.setText(contact.phone);
     }
 
     private fun save(){
-        val contact = ContactModel(
-                0,
-                nameContactEDT.text.toString(),
-                numberContactEDT.text.toString()
-        )
-
+        var index = intent.getIntExtra("index",-1)
         saveContactBTN.setOnClickListener{
-            if(index == -1){
+            val name = nameContactEDT.text.toString()
+            val phone = numberContactEDT.text.toString();
+            val contact = ContactModel(
+               index,
+                name,
+                phone
+            )
+            if(name.isNotEmpty()){
+                if(index == -1){
+                    try{
+                        ContactApplication.instance.helperDB?.onSave(contact)
+                        println("CONTACT: ${contact.name}");
+                    }catch (ex:Exception){
+                        ex.printStackTrace()
+                    }
 
-                ContactSingleton.list.add(contact)
-            }else{
-                ContactSingleton.list[index] = contact
+                }else{
+                    ContactApplication.instance.helperDB?.onUpdate(contact);
+                }
+
+                finish()
+            }else {
+                Toast.makeText(this, "Enter some message", Toast.LENGTH_SHORT).show()
             }
-            finish()
         }
 
     }
@@ -54,7 +70,7 @@ class ContactActivity:BaseActivity() {
     private fun delete(){
         deleteContactBTN.setOnClickListener{
             var index = intent.getIntExtra("index",1);
-            ContactSingleton.list.removeAt(index)
+            ContactApplication.instance.helperDB?.onDelete(index.toInt())
             finish()
         }
     }
